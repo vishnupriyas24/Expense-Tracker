@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(120deg, #a18cd1, #fbc2eb, #f9a8b1);
+            background-size: 300% 300%;
+            animation: gradientBG 8s ease infinite;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+
+        body.dark-mode {
+            background: #121212;
+            color: #fff;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        h1 {
+            color: white;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        input, select, button {
+            padding: 10px;
+            font-size: 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        input, select {
+            background-color: #fff;
+        }
+
+        button {
+            cursor: pointer;
+            background: linear-gradient(90deg, #ff758c, #ff7eb3);
+            color: white;
+            font-weight: bold;
+            transition: transform 0.2s ease;
+        }
+
+        button:hover {
+            transform: scale(1.1);
+        }
+
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        table.dark-mode {
+            background-color: #333;
+            color: #fff;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: linear-gradient(90deg, #8e44ad, #3498db);
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #dfe6e9;
+        }
+
+        .delete-btn {
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .delete-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .total {
+            margin-top: 20px;
+            font-size: 20px;
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .dark-mode .total {
+            color: #ddd;
+        }
+
+        .toggle-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        .toggle-btn:hover {
+            transform: scale(1.1);
+        }
+
+    </style>
+</head>
+<body>
+    <button class="toggle-btn" id="dark-mode-toggle">Toggle Dark Mode</button>
+    <h1>Expense Tracker</h1>
+    <form id="expense-form">
+        <input type="text" id="expense-name" placeholder="Expense Name" required>
+        <input type="number" id="expense-amount" placeholder="Amount" required>
+        <select id="expense-category">
+            <option value="Food">Food</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Travel">Travel</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Healthcare">Healthcare</option>
+            <option value="Fitness">Fitness</option>
+            <option value="Education">Education</option>
+            <option value="Investments">Investments</option>
+            <option value="Charity">Charity</option>
+            <option value="Emergency">Emergency</option>
+            <option value="Savings">Savings</option>
+            <option value="Others">Others</option>
+        </select>
+        <button type="submit">Add Expense</button>
+    </form>
+    <table id="expense-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <div class="total" id="total-amount">Total: $0</div>
+
+    <script>
+        const form = document.getElementById("expense-form");
+        const tableBody = document.querySelector("#expense-table tbody");
+        const totalAmountElement = document.getElementById("total-amount");
+        const darkModeToggle = document.getElementById("dark-mode-toggle");
+
+        let expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+        let totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+
+        // Populate table on load
+        expenses.forEach(expense => addExpenseToTable(expense));
+        updateTotalAmount();
+
+        // Toggle dark mode
+        darkModeToggle.addEventListener("click", () => {
+            document.body.classList.toggle("dark-mode");
+            document.querySelector("table").classList.toggle("dark-mode");
+        });
+
+        form.addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const name = document.getElementById("expense-name").value.trim();
+            const amount = parseFloat(document.getElementById("expense-amount").value);
+            const category = document.getElementById("expense-category").value;
+
+            if (!name || isNaN(amount) || amount <= 0) {
+                alert("Please enter a valid expense name, amount, and category.");
+                return;
+            }
+
+            const expense = { name, amount, category, id: Date.now() };
+            expenses.push(expense);
+            localStorage.setItem("expenses", JSON.stringify(expenses));
+
+            addExpenseToTable(expense);
+            updateTotalAmount();
+
+            form.reset();
+        });
+
+        function addExpenseToTable(expense) {
+            const row = document.createElement("tr");
+            row.setAttribute("data-id", expense.id);
+
+            row.innerHTML = `
+                <td>${expense.name}</td>
+                <td>${expense.category}</td>
+                <td>$${expense.amount.toFixed(2)}</td>
+                <td><button class="delete-btn" onclick="deleteExpense(${expense.id})">Delete</button></td>
+            `;
+
+            tableBody.appendChild(row);
+        }
+
+        function updateTotalAmount() {
+            totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+            totalAmountElement.textContent = `Total: $${totalAmount.toFixed(2)}`;
+        }
+
+        function deleteExpense(id) {
+            expenses = expenses.filter(expense => expense.id !== id);
+            localStorage.setItem("expenses", JSON.stringify(expenses));
+
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            if (row) row.remove();
+
+            updateTotalAmount();
+        }
+    </script>
+</body>
+</html>
